@@ -83,7 +83,6 @@ public class Controller {
     public ResponseEntity<String> multicast() {
         String[] userList = {
                 "Uf26c938720a4b57c45880ba3965631ad",
-                "christicomp",
                 "Uf26c938720a4b57c45880ba3965631ad",
                 "Uf26c938720a4b57c45880ba3965631ad",
                 "Uf26c938720a4b57c45880ba3965631ad"

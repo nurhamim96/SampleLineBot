@@ -3,6 +3,7 @@ package com.tutorial.ImplementFiturJava;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linecorp.bot.client.LineMessagingClient;
 import com.linecorp.bot.client.LineSignatureValidator;
+import com.linecorp.bot.model.PushMessage;
 import com.linecorp.bot.model.ReplyMessage;
 import com.linecorp.bot.model.event.MessageEvent;
 import com.linecorp.bot.model.event.message.TextMessageContent;
@@ -59,12 +60,26 @@ public class Controller {
             e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        
-//        private void reply(ReplyMessage replyMessagge) {
-//            try {
-//                lineMessagingClient.replyMessage(re)
-//            }
-//        }
+    }
+
+    @RequestMapping(value="/pushmessage/{id}/{message}", method=RequestMethod.GET)
+    public ResponseEntity<String> pushMessage(
+            @PathVariable("id") String userId,
+            @PathVariable("message") String textMsg
+    ) {
+        TextMessage textMessage = new TextMessage(textMsg);
+        PushMessage pushMessage = new PushMessage(userId, textMessage);
+        push(pushMessage);
+
+        return new ResponseEntity<>("Push message: " + textMsg + "\n sent to: " + userId, HttpStatus.OK );
+    }
+
+    private void push(PushMessage pushMessage) {
+        try {
+            lineMessagingClient.pushMessage(pushMessage).get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private void replyText(String replyToken, String messageToUser) {

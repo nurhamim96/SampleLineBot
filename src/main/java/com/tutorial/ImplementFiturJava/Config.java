@@ -30,9 +30,9 @@ public class Config {
         return LineMessagingClient
                 .builder(getChannelAccessToken())
                 .apiEndPoint("https://api.line.me/")
-                .connectTimeout(50_000)
-                .readTimeout(50_000)
-                .writeTimeout(50_000)
+                .connectTimeout(10_000)
+                .readTimeout(10_000)
+                .writeTimeout(10_000)
                 .build();
     }
 

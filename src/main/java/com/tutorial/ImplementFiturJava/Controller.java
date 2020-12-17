@@ -3,6 +3,7 @@ package com.tutorial.ImplementFiturJava;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linecorp.bot.client.LineMessagingClient;
 import com.linecorp.bot.client.LineSignatureValidator;
+import com.linecorp.bot.model.Multicast;
 import com.linecorp.bot.model.PushMessage;
 import com.linecorp.bot.model.ReplyMessage;
 import com.linecorp.bot.model.event.MessageEvent;
@@ -18,6 +19,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.beans.ExceptionListener;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -72,6 +76,36 @@ public class Controller {
         push(pushMessage);
 
         return new ResponseEntity<>("Push message: " + textMsg + "\n sent to: " + userId, HttpStatus.OK );
+    }
+
+    @RequestMapping(value="/multicast", method=RequestMethod.GET)
+    public ResponseEntity<String> multicast() {
+        String[] userList = {
+                "Uf26c938720a4b57c45880ba3965631ad",
+                "Uf26c938720a4b57c45880ba3965631ad",
+                "Uf26c938720a4b57c45880ba3965631ad",
+                "Uf26c938720a4b57c45880ba3965631ad",
+                "Uf26c938720a4b57c45880ba3965631ad"
+        };
+
+        Set<String> listUsers = new HashSet<>(Arrays.asList(userList));
+        if (listUsers.size() > 0) {
+            String textMsg = "Halo, Have a nice day!";
+            sendMulticast(listUsers, textMsg);
+        }
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private void sendMulticast(Set<String> sourceUsers, String textMessage) {
+        TextMessage message = new TextMessage(textMessage);
+        Multicast multicast = new Multicast(sourceUsers, message);
+
+        try {
+            lineMessagingClient.multicast(multicast).get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private void push(PushMessage pushMessage) {

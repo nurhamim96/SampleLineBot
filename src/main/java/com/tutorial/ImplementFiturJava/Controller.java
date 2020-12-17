@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -95,6 +96,23 @@ public class Controller {
         }
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/profile", method = RequestMethod.GET)
+    public ResponseEntity<String> getProfile() {
+        String userId = "Uf26c938720a4b57c45880ba3965631ad";
+        UserProfileResponse profile = getProfile(userId);
+
+        if (profile != null) {
+            String profileName = profile.getDisplayName();
+            TextMessage textMessage = new TextMessage("Hello, " + profileName + ". Saya Chatboot");
+            PushMessage pushMessage = new PushMessage(userId, textMessage);
+            push(pushMessage);
+
+            return new ResponseEntity<>("Hello, " + profileName, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>("Hello, " + profile, HttpStatus.NOT_FOUND);
     }
 
     @RequestMapping(value = "/profile/{id}", method = RequestMethod.GET)

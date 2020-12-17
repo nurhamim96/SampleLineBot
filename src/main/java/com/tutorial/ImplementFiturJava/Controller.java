@@ -11,13 +11,13 @@ import com.linecorp.bot.model.event.message.TextMessageContent;
 import com.linecorp.bot.model.message.StickerMessage;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.objectmapper.ModelObjectMapper;
+import com.linecorp.bot.model.profile.UserProfileResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.beans.ExceptionListener;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -95,6 +95,32 @@ public class Controller {
         }
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/profile/{id}", method = RequestMethod.GET)
+    public ResponseEntity<String> profile(
+            @PathVariable("id") String userId
+    ) {
+        UserProfileResponse profile = getProfile(userId);
+
+        if (profile != null) {
+            String profileName = profile.getDisplayName();
+            TextMessage textMessage = new TextMessage("Helo, " + profileName + ". Apakabar?");
+            PushMessage pushMessage = new PushMessage(userId, textMessage);
+            push(pushMessage);
+
+            return new ResponseEntity<String>("Hello, " +profileName, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<String >(HttpStatus.NOT_FOUND);
+    }
+
+    private UserProfileResponse getProfile(String userId) {
+        try {
+            return lineMessagingClient.getProfile(userId).get();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private void sendMulticast(Set<String> sourceUsers, String textMessage) {

@@ -10,6 +10,8 @@ import com.linecorp.bot.model.ReplyMessage;
 import com.linecorp.bot.model.action.MessageAction;
 import com.linecorp.bot.model.event.MessageEvent;
 import com.linecorp.bot.model.event.message.*;
+import com.linecorp.bot.model.event.source.GroupSource;
+import com.linecorp.bot.model.event.source.RoomSource;
 import com.linecorp.bot.model.message.StickerMessage;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.objectmapper.ModelObjectMapper;
@@ -64,6 +66,15 @@ public class Controller {
 //                    TextMessageContent textMessageContent = (TextMessageContent) messageEvent.getMessage();
 //                    replyText(messageEvent.getReplyToken(), textMessageContent.getText());
 
+                    if (event.getSource() instanceof GroupSource || event.getSource() instanceof RoomSource) {
+                        eventModel.getEvents().forEach((event1) -> {
+                            if (event1 instanceof MessageEvent) {
+                                if (event1.getSource() instanceof GroupSource || event1.getSource() instanceof RoomSource) {
+                                    handleGroupRoomChats((MessageEvent) event1);
+                                }
+                            }
+                        });
+                    }
 
                     if (((MessageEvent) event).getMessage() instanceof AudioMessageContent
                     || ((MessageEvent) event).getMessage() instanceof ImageMessageContent
@@ -91,6 +102,16 @@ public class Controller {
         } catch (IOException e) {
             e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private void handleGroupRoomChats(MessageEvent event1) {
+        if (!event1.getSource().getUserId().isEmpty()){
+            String userId = event1.getSource().getUserId();
+            UserProfileResponse profile = getProfile(userId);
+            replyText(event1.getReplyToken(), "Hallo, " + profile.getDisplayName());
+        } else {
+            replyText(event1.getReplyToken(), "Hello, what is your name?");
         }
     }
 

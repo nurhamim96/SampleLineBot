@@ -74,26 +74,26 @@ public class Controller {
                                 }
                             }
                         });
-                    }
+                    } else {
+                        if (((MessageEvent) event).getMessage() instanceof AudioMessageContent
+                    || ((MessageEvent) event).getMessage() instanceof ImageMessageContent
+                    || ((MessageEvent) event).getMessage() instanceof VideoMessageContent
+                    || ((MessageEvent) event).getMessage() instanceof FileMessageContent
+                    ) {
+                        String baseUrl = "https://devjavalinechatboot.herokuapp.com";
+                        String contentURL = baseUrl + "/content/" + ((MessageEvent) event).getMessage().getId();
+                        String contentType = ((MessageEvent) event).getMessage().getClass().getSimpleName();
+                        String textMsg = contentType.substring(0, contentType.length() -14)
+                                + " yang kamu kirim bisa diakses dari link:\n "
+                                + contentURL;
 
-//                    if (((MessageEvent) event).getMessage() instanceof AudioMessageContent
-//                    || ((MessageEvent) event).getMessage() instanceof ImageMessageContent
-//                    || ((MessageEvent) event).getMessage() instanceof VideoMessageContent
-//                    || ((MessageEvent) event).getMessage() instanceof FileMessageContent
-//                    ) {
-//                        String baseUrl = "https://devjavalinechatboot.herokuapp.com";
-//                        String contentURL = baseUrl + "/content/" + ((MessageEvent) event).getMessage().getId();
-//                        String contentType = ((MessageEvent) event).getMessage().getClass().getSimpleName();
-//                        String textMsg = contentType.substring(0, contentType.length() -14)
-//                                + " yang kamu kirim bisa diakses dari link:\n "
-//                                + contentURL;
-//
-//                        replyText(((MessageEvent) event).getReplyToken(), textMsg);
-//                    } else {
-//                        MessageEvent messageEvent = (MessageEvent) event;
-//                        TextMessageContent textMessageContent = (TextMessageContent) messageEvent.getMessage();
-//                        replyText(messageEvent.getReplyToken(), textMessageContent.getText());
-//                    }
+                        replyText(((MessageEvent) event).getReplyToken(), textMsg);
+                    } else {
+                        MessageEvent messageEvent = (MessageEvent) event;
+                        TextMessageContent textMessageContent = (TextMessageContent) messageEvent.getMessage();
+                        replyText(messageEvent.getReplyToken(), textMessageContent.getText());
+                    }
+                    }
                 }
             });
 

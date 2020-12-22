@@ -12,8 +12,10 @@ import com.linecorp.bot.model.event.MessageEvent;
 import com.linecorp.bot.model.event.message.*;
 import com.linecorp.bot.model.event.source.GroupSource;
 import com.linecorp.bot.model.event.source.RoomSource;
+import com.linecorp.bot.model.message.FlexMessage;
 import com.linecorp.bot.model.message.StickerMessage;
 import com.linecorp.bot.model.message.TextMessage;
+import com.linecorp.bot.model.message.flex.container.FlexContainer;
 import com.linecorp.bot.model.objectmapper.ModelObjectMapper;
 import com.linecorp.bot.model.profile.UserProfileResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +27,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -59,40 +63,47 @@ public class Controller {
             ObjectMapper objectMapper = ModelObjectMapper.createNewObjectMapper();
             EventModel eventModel = objectMapper.readValue(eventPayload, EventModel.class);
 
-            eventModel.getEvents().forEach((event)->{
+//            eventModel.getEvents().forEach((event)->{
                 // kode replay message disini.
+//                if (event instanceof MessageEvent) {
+////                    MessageEvent messageEvent = (MessageEvent) event;
+////                    TextMessageContent textMessageContent = (TextMessageContent) messageEvent.getMessage();
+////                    replyText(messageEvent.getReplyToken(), textMessageContent.getText());
+//
+//                    if (((MessageEvent) event).getMessage() instanceof AudioMessageContent
+//                    || ((MessageEvent) event).getMessage() instanceof ImageMessageContent
+//                    || ((MessageEvent) event).getMessage() instanceof VideoMessageContent
+//                    || ((MessageEvent) event).getMessage() instanceof FileMessageContent
+//                    ) {
+//                        String baseUrl = "https://devjavalinechatboot.herokuapp.com";
+//                        String contentURL = baseUrl + "/content/" + ((MessageEvent) event).getMessage().getId();
+//                        String contentType = ((MessageEvent) event).getMessage().getClass().getSimpleName();
+//                        String textMsg = contentType.substring(0, contentType.length() -14)
+//                                + " yang kamu kirim bisa diakses dari link:\n "
+//                                + contentURL;
+//
+//                        replyText(((MessageEvent) event).getReplyToken(), textMsg);
+//                    } else {
+//                        MessageEvent messageEvent = (MessageEvent) event;
+//                        TextMessageContent textMessageContent = (TextMessageContent) messageEvent.getMessage();
+//                        replyText(messageEvent.getReplyToken(), textMessageContent.getText());
+//                    }
+//                }
+
+//            });
+
+
+
+
+            // KODE EVENTSMODEL DI BAWAH INI DIGUNAKAN PADA MATERI GROUP ROOM API DAN FLEX MESSAGES
+            // SESUAIKAN PENGGUNAAN DENGAN KETERANGAN PADA MODUL
+
+            eventModel.getEvents().forEach((event) -> {
                 if (event instanceof MessageEvent) {
-//                    MessageEvent messageEvent = (MessageEvent) event;
-//                    TextMessageContent textMessageContent = (TextMessageContent) messageEvent.getMessage();
-//                    replyText(messageEvent.getReplyToken(), textMessageContent.getText());
-
                     if (event.getSource() instanceof GroupSource || event.getSource() instanceof RoomSource) {
-                        eventModel.getEvents().forEach((event1) -> {
-                            if (event1 instanceof MessageEvent) {
-                                if (event1.getSource() instanceof GroupSource || event1.getSource() instanceof RoomSource) {
-                                    handleGroupRoomChats((MessageEvent) event1);
-                                }
-                            }
-                        });
+                        handleGroupRoomChats((MessageEvent) event);
                     } else {
-                        if (((MessageEvent) event).getMessage() instanceof AudioMessageContent
-                    || ((MessageEvent) event).getMessage() instanceof ImageMessageContent
-                    || ((MessageEvent) event).getMessage() instanceof VideoMessageContent
-                    || ((MessageEvent) event).getMessage() instanceof FileMessageContent
-                    ) {
-                        String baseUrl = "https://devjavalinechatboot.herokuapp.com";
-                        String contentURL = baseUrl + "/content/" + ((MessageEvent) event).getMessage().getId();
-                        String contentType = ((MessageEvent) event).getMessage().getClass().getSimpleName();
-                        String textMsg = contentType.substring(0, contentType.length() -14)
-                                + " yang kamu kirim bisa diakses dari link:\n "
-                                + contentURL;
-
-                        replyText(((MessageEvent) event).getReplyToken(), textMsg);
-                    } else {
-                        MessageEvent messageEvent = (MessageEvent) event;
-                        TextMessageContent textMessageContent = (TextMessageContent) messageEvent.getMessage();
-                        replyText(messageEvent.getReplyToken(), textMessageContent.getText());
-                    }
+                        handleOneOnOneChats((MessageEvent) event);
                     }
                 }
             });
@@ -112,6 +123,56 @@ public class Controller {
             replyText(event1.getReplyToken(), "Hallo, " + profile.getDisplayName());
         } else {
             replyText(event1.getReplyToken(), "Hello, what is your name?");
+        }
+    }
+
+    private void handleOneOnOneChats(MessageEvent event) {
+        if (event.getMessage() instanceof AudioMessageContent
+        || event.getMessage() instanceof ImageMessageContent
+        || event.getMessage() instanceof VideoMessageContent
+        || event.getMessage() instanceof FileMessageContent
+        ) {
+            handleContentMessage(event);
+        } else if (event.getMessage() instanceof TextMessageContent) {
+            handleTextMessage(event);
+        } else {
+            replyText(event.getReplyToken(), "Unknow Message");
+        }
+    }
+
+    private void handleContentMessage(MessageEvent event) {
+        String baseURL     = "https://chatbotjava.herokuapp.com";
+        String contentURL  = baseURL+"/content/"+ event.getMessage().getId();
+        String contentType = event.getMessage().getClass().getSimpleName();
+        String textMsg     = contentType.substring(0, contentType.length() -14)
+                + " yang kamu kirim bisa diakses dari link:\n "
+                + contentURL;
+
+        replyText(event.getReplyToken(), textMsg);
+    }
+
+    private void handleTextMessage(MessageEvent event) {
+        TextMessageContent textMessageContent = (TextMessageContent) event.getMessage();
+
+        if (textMessageContent.getText().toLowerCase().contains("flex")) {
+            replyFlexMessage(event.getReplyToken());
+        } else {
+            replyText(event.getReplyToken(), textMessageContent.getText());
+        }
+    }
+
+    private void replyFlexMessage(String replyToken) {
+        try {
+            ClassLoader classLoader = getClass().getClassLoader();
+            String flexTemplate = IOUtils.toString(classLoader.getResourceAsStream("flex_message.json"));
+
+            ObjectMapper objectMapper = ModelObjectMapper.createNewObjectMapper();
+            FlexContainer flexContainer = objectMapper.readValue(flexTemplate, FlexContainer.class);
+
+            ReplyMessage replyMessage = new ReplyMessage(replyToken, new FlexMessage("Sample Flex", flexContainer));
+            reply(replyMessage);
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
         }
     }
 
